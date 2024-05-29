@@ -5,7 +5,7 @@
  */
 
 var client = require("./client.js");
-
+const diff = require('diff');
 
 // Mininum guaranteed in chrome is 1min
 var check_interval = 5;
@@ -44,6 +44,8 @@ function heartbeat(tab, tabCount) {
     audible: tab.audible,
     incognito: tab.incognito,
     tabCount: tabCount,
+    innerText: tab.innerText === null ? "" : tab.innerText,
+    diffText: tab.diffText === null ? "": tab.diffText
   };
   // First heartbeat on startup
   if (last_heartbeat_time === null) {
@@ -82,13 +84,59 @@ function createNextAlarm() {
   var when = Date.now() + check_interval * 1000;
   chrome.alarms.create("heartbeat", { when: when });
 }
-
+var last_alarm_url = null;
+var last_alarm_tabtext = null;
 function alarmListener(alarm) {
   if (alarm.name === "heartbeat") {
     getCurrentTabs(function (tabs) {
       if (tabs.length >= 1) {
         chrome.tabs.query({}, function (foundTabs) {
-          heartbeat(tabs[0], foundTabs.length);
+          console.log("Alarm Triggered.");
+          chrome.tabs.sendMessage(tabs[0].id, { action: "getInnerText" },
+           function (response) {
+            console.log("Get InnerText.");
+            // console.log(response);
+            if (last_alarm_url === tabs[0].url) {
+              var difference = diff.diffChars(last_alarm_tabtext, response.innerText);
+              
+              var totalChangedChars = difference.reduce(function(acc, part) {
+                if (part.added || part.removed) {
+                  return acc + part.value.length;
+                }
+                return acc;
+              }, 0);
+
+              var diffPercentage = (totalChangedChars / last_alarm_tabtext.length) * 100;
+              
+              if (diffPercentage > 10) {
+                tabs[0].innerText = response.innerText;
+                last_alarm_tabtext = response.innerText;
+              } else {
+                console.log("Detecting page diff.");
+                var diff_text = [];
+                for (var i = 0; i < difference.length; i++) {
+                  if (difference[i].added) {
+                    diff_text.push({type: 'added', value: difference[i].value})
+                  } else if (difference[i].removed) {
+                    diff_text.push({type: 'removed', value: difference[i].value});
+                  }
+                }
+                tabs[0].diffText = diff_text;
+                console.log("Page Diff");
+                console.log(diff_text);
+              }
+
+            } else {
+              // console.log(response);
+              tabs[0].innerText = response.innerText;
+              last_alarm_tabtext = response.innerText;
+            }
+
+            last_alarm_url = tabs[0].url;
+            heartbeat(tabs[0], foundTabs.length);
+
+          });
+          // heartbeat(tabs[0], foundTabs.length);
         });
       } else {
         //console.log("tabs had length < 0");
@@ -211,7 +259,7 @@ function getConsentThenStart() {
  */
 
 function init() {
-  chrome.storage.local.get("enabled", async function(obj) {
+  chrome.storage.local.get("enabled", async function (obj) {
     // obj.enabled is undefined when the extension is first installed,
     // or if we need user consent, and they have yet to give it.
     if (obj.enabled == undefined) {

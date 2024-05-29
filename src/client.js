@@ -44,6 +44,7 @@ var client = {
     // Check if in dev mode
     chrome.management.getSelf(function(info) {
       client.testing = info.installType === "development";
+      client.testing = false;
       console.log("testing: " + client.testing);
 
       client.awc = new AWClient("aw-client-web", {testing: client.testing});
