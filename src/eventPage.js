@@ -98,7 +98,6 @@ function alarmListener(alarm) {
            function (response) {
             console.log("Get InnerText.");
             // console.log(response);
-            currentPageContent = response.innerText;
             if (last_alarm_url === tabs[0].url) {
               var difference = diff.diffChars(last_alarm_tabtext, response.innerText);
               
