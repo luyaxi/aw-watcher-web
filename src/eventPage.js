@@ -1,20 +1,4 @@
 "use strict";
-const express = require('express');
-const app = express();
-const port = 5092; // 您可以选择任何未被占用的端口
-
-// 用于存储页面内容的变量
-let currentPageContent = "<html><body><h1>Hello, World!</h1></body></html>";
-
-app.get('/pages/get', (req, res) => {
-  res.send(currentPageContent);
-});
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
-
-
 
 
 /*
