@@ -1,4 +1,22 @@
 "use strict";
+const express = require('express');
+const app = express();
+const port = 5092; // 您可以选择任何未被占用的端口
+
+// 用于存储页面内容的变量
+let currentPageContent = "<html><body><h1>Hello, World!</h1></body></html>";
+
+app.get('/pages/get', (req, res) => {
+  res.send(currentPageContent);
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
+
+
+
 /*
  * This code uses event pages, a special webextension thingy documented here:
  * https://developer.chrome.com/extensions/event_pages
@@ -96,6 +114,7 @@ function alarmListener(alarm) {
            function (response) {
             console.log("Get InnerText.");
             // console.log(response);
+            currentPageContent = response.innerText;
             if (last_alarm_url === tabs[0].url) {
               var difference = diff.diffChars(last_alarm_tabtext, response.innerText);
               
